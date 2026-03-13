@@ -12,16 +12,36 @@ import {
 
 const router: IRouter = Router();
 
-let sensorData = {
-  temperature: 28.5,
-  humidity: 65,
-  soilMoisture: 45,
-  soilStatus: "التربة تحتاج ماء",
-  plantHealth: "medium" as "healthy" | "medium" | "unhealthy",
-  updatedAt: new Date(),
+type SensorState = {
+  temperature: number;
+  humidity: number;
+  soilMoisture: number;
+  soilStatus: string;
+  plantHealth: "healthy" | "medium" | "unhealthy";
+  updatedAt: Date;
+  hasRealData: boolean;
 };
 
-let robotStatus = {
+type StatusState = {
+  connected: boolean;
+  obstacleDetected: boolean;
+  movementProblem: boolean;
+  systemError: boolean;
+  cameraActive: boolean;
+  lastSeen: Date;
+};
+
+let sensorState: SensorState = {
+  temperature: 0,
+  humidity: 0,
+  soilMoisture: 0,
+  soilStatus: "لا توجد بيانات",
+  plantHealth: "medium",
+  updatedAt: new Date(),
+  hasRealData: false,
+};
+
+let robotStatus: StatusState = {
   connected: false,
   obstacleDetected: false,
   movementProblem: false,
@@ -44,7 +64,6 @@ function getPlantHealth(
   const moistureOk = moisture >= 50 && moisture <= 80;
   const tempOk = temperature >= 15 && temperature <= 35;
   const humidityOk = humidity >= 40 && humidity <= 80;
-
   const goodCount = [moistureOk, tempOk, humidityOk].filter(Boolean).length;
   if (goodCount === 3) return "healthy";
   if (goodCount >= 1) return "medium";
@@ -52,8 +71,18 @@ function getPlantHealth(
 }
 
 router.get("/sensor-data", (_req, res) => {
-  const data = GetSensorDataResponse.parse(sensorData);
-  res.json(data);
+  if (!sensorState.hasRealData || !robotStatus.connected) {
+    return res.json({ hasRealData: false });
+  }
+  const data = GetSensorDataResponse.parse({
+    temperature: sensorState.temperature,
+    humidity: sensorState.humidity,
+    soilMoisture: sensorState.soilMoisture,
+    soilStatus: sensorState.soilStatus,
+    plantHealth: sensorState.plantHealth,
+    updatedAt: sensorState.updatedAt,
+  });
+  return res.json({ hasRealData: true, data });
 });
 
 router.post("/sensor-data", (req, res) => {
@@ -65,33 +94,49 @@ router.post("/sensor-data", (req, res) => {
     body.humidity
   );
 
-  sensorData = {
-    ...body,
+  sensorState = {
+    temperature: body.temperature,
+    humidity: body.humidity,
+    soilMoisture: body.soilMoisture,
     soilStatus,
     plantHealth,
     updatedAt: new Date(),
+    hasRealData: true,
   };
 
-  const data = UpdateSensorDataResponse.parse(sensorData);
+  const data = UpdateSensorDataResponse.parse({
+    temperature: sensorState.temperature,
+    humidity: sensorState.humidity,
+    soilMoisture: sensorState.soilMoisture,
+    soilStatus: sensorState.soilStatus,
+    plantHealth: sensorState.plantHealth,
+    updatedAt: sensorState.updatedAt,
+  });
   res.json(data);
 });
 
 router.post("/command", (req, res) => {
   const body = SendRobotCommandBody.parse(req.body);
 
+  if (!robotStatus.connected) {
+    return res.status(403).json({
+      success: false,
+      command: body.command,
+      message: "الروبوت غير متصل",
+    });
+  }
+
   if (body.command === "K") {
     robotStatus.cameraActive = !robotStatus.cameraActive;
-    robotStatus.lastSeen = new Date();
-  } else {
-    robotStatus.lastSeen = new Date();
   }
+  robotStatus.lastSeen = new Date();
 
   const commandNames: Record<string, string> = {
     F: "تحرك للأمام",
     B: "تحرك للخلف",
     L: "دوران لليسار",
     R: "دوران لليمين",
-    K: "تفعيل الكاميرا",
+    K: robotStatus.cameraActive ? "تشغيل الكاميرا" : "إيقاف الكاميرا",
     S: "توقف",
   };
 
@@ -101,7 +146,7 @@ router.post("/command", (req, res) => {
     message: commandNames[body.command] || "أمر غير معروف",
   });
 
-  res.json(result);
+  return res.json(result);
 });
 
 router.get("/status", (_req, res) => {
@@ -111,10 +156,24 @@ router.get("/status", (_req, res) => {
 
 router.post("/status", (req, res) => {
   const body = UpdateRobotStatusBody.parse(req.body);
-  robotStatus = {
-    ...body,
-    lastSeen: new Date(),
-  };
+
+  if (!body.connected) {
+    sensorState.hasRealData = false;
+    robotStatus = {
+      connected: false,
+      obstacleDetected: false,
+      movementProblem: false,
+      systemError: false,
+      cameraActive: false,
+      lastSeen: new Date(),
+    };
+  } else {
+    robotStatus = {
+      ...body,
+      lastSeen: new Date(),
+    };
+  }
+
   const data = UpdateRobotStatusResponse.parse(robotStatus);
   res.json(data);
 });
