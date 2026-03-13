@@ -1,9 +1,9 @@
-import { motion, AnimatePresence } from "framer-motion";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { SensorCards } from "@/components/SensorCards";
 import { CameraFeed } from "@/components/CameraFeed";
 import { AlertsPanel } from "@/components/AlertsPanel";
 import { ControlPad } from "@/components/ControlPad";
+import { BluetoothScanModal } from "@/components/BluetoothScanModal";
 import { useRobotControl } from "@/hooks/use-robot-control";
 import { useToast } from "@/hooks/use-toast";
 import type { RobotCommand } from "@workspace/api-client-react";
@@ -20,8 +20,17 @@ export default function Dashboard() {
     appUrl,
     sensorData,
     robotStatus,
+    // مودال البحث
+    showModal,
+    isScanning,
+    discoveredDevices,
+    noDevicesFound,
+    connectingId,
+    // دوال
     connect,
     disconnect,
+    connectToDevice,
+    closeModal,
     sendCommand,
   } = useRobotControl();
 
@@ -59,7 +68,18 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans relative" dir="rtl">
-      {/* خلفية ديكورية */}
+      {/* مودال البحث عن البلوتوث */}
+      <BluetoothScanModal
+        open={showModal}
+        isScanning={isScanning}
+        devices={discoveredDevices}
+        noDevicesFound={noDevicesFound}
+        connectingId={connectingId}
+        onSelect={connectToDevice}
+        onClose={closeModal}
+      />
+
+      {/* خلفيات ديكورية */}
       <div
         className="fixed inset-0 z-0 opacity-[0.03] pointer-events-none mix-blend-screen"
         style={{
