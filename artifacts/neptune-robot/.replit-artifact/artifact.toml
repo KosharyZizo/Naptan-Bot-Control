@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "نبتان - تحكم الروبوت"
+version = "1.0.0"
+id = "artifacts/neptune-robot"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+localPort = 23447
+name = "web"
+paths = ["/"]
+
+[services.development]
+run = "pnpm --filter @workspace/neptune-robot run dev"
+
+[services.env]
+PORT = "23447"
+BASE_PATH = "/"
+
+[services.production]
+build = ["pnpm", "--filter", "@workspace/neptune-robot", "run", "build"]
+publicDir = "artifacts/neptune-robot/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"

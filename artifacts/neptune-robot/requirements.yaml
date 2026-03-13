@@ -1,0 +1,14 @@
+packages:
+  "framer-motion": "For smooth dashboard animations and transitions"
+  "clsx": "For conditional class names"
+  "tailwind-merge": "For merging tailwind classes safely"
+  "@radix-ui/react-toast": "For toast notifications on button press"
+
+images:
+  - path: "artifacts/neptune-robot/public/images/agri-tech-bg.png"
+    description: "Abstract dark background with subtle glowing green and teal circuit or topographical map lines, representing agricultural technology and robotics, very minimal and suitable for a dashboard background"
+    aspect_ratio: "16:9"
+
+notes:
+  - Application requires RTL (Right-to-Left) support for Arabic.
+  - The API endpoints might not be fully functional with real hardware, so a demo/simulation fallback is implemented in the frontend hooks to ensure the UI remains interactive and visually demonstrates the features.

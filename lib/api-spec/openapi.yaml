@@ -1,15 +1,16 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API specification for Neptune Robot Control
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: robot
+    description: Robot control operations
 paths:
   /healthz:
     get:
@@ -24,6 +25,87 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /robot/sensor-data:
+    get:
+      operationId: getSensorData
+      tags: [robot]
+      summary: Get latest sensor data
+      description: Returns the latest sensor readings from the robot
+      responses:
+        "200":
+          description: Sensor data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensorData"
+    post:
+      operationId: updateSensorData
+      tags: [robot]
+      summary: Update sensor data
+      description: Update sensor readings from the robot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SensorDataInput"
+      responses:
+        "200":
+          description: Updated sensor data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensorData"
+  /robot/command:
+    post:
+      operationId: sendRobotCommand
+      tags: [robot]
+      summary: Send command to robot
+      description: Send a movement or action command to the robot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RobotCommand"
+      responses:
+        "200":
+          description: Command sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommandResult"
+  /robot/status:
+    get:
+      operationId: getRobotStatus
+      tags: [robot]
+      summary: Get robot status
+      description: Returns connection status and alerts
+      responses:
+        "200":
+          description: Robot status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RobotStatus"
+    post:
+      operationId: updateRobotStatus
+      tags: [robot]
+      summary: Update robot status
+      description: Update robot connection status and alerts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RobotStatusInput"
+      responses:
+        "200":
+          description: Updated robot status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RobotStatus"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +115,108 @@ components:
           type: string
       required:
         - status
-
+    SensorData:
+      type: object
+      properties:
+        temperature:
+          type: number
+          description: Temperature in Celsius
+        humidity:
+          type: number
+          description: Air humidity percentage
+        soilMoisture:
+          type: number
+          description: Soil moisture percentage (0-100)
+        soilStatus:
+          type: string
+          description: Soil moisture status description
+        plantHealth:
+          type: string
+          enum: [healthy, medium, unhealthy]
+          description: Overall plant health assessment
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - temperature
+        - humidity
+        - soilMoisture
+        - soilStatus
+        - plantHealth
+        - updatedAt
+    SensorDataInput:
+      type: object
+      properties:
+        temperature:
+          type: number
+        humidity:
+          type: number
+        soilMoisture:
+          type: number
+      required:
+        - temperature
+        - humidity
+        - soilMoisture
+    RobotCommand:
+      type: object
+      properties:
+        command:
+          type: string
+          enum: [F, B, L, R, K, S]
+          description: Command character (F=Forward, B=Backward, L=Left, R=Right, K=Camera, S=Stop)
+      required:
+        - command
+    CommandResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        command:
+          type: string
+        message:
+          type: string
+      required:
+        - success
+        - command
+        - message
+    RobotStatus:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        obstacleDetected:
+          type: boolean
+        movementProblem:
+          type: boolean
+        systemError:
+          type: boolean
+        cameraActive:
+          type: boolean
+        lastSeen:
+          type: string
+          format: date-time
+      required:
+        - connected
+        - obstacleDetected
+        - movementProblem
+        - systemError
+        - cameraActive
+    RobotStatusInput:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        obstacleDetected:
+          type: boolean
+        movementProblem:
+          type: boolean
+        systemError:
+          type: boolean
+        cameraActive:
+          type: boolean
+      required:
+        - connected
+        - obstacleDetected
+        - movementProblem
+        - systemError
+        - cameraActive
