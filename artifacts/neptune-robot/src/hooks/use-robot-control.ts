@@ -12,35 +12,41 @@ export type ConnectionPhase =
 
 export type RealSensorData = SensorData | null;
 
-export type BluetoothDeviceInfo = {
-  id: string;
-  name: string;
+// هل التطبيق يعمل داخل إطار مضمّن (iframe)؟
+const isInIframe = (): boolean => {
+  try { return window.self !== window.top; } catch { return true; }
 };
 
+// رابط التطبيق المباشر
+const getAppUrl = (): string => window.location.href;
+
 export function useRobotControl() {
-  const [phase, setPhase] = useState<ConnectionPhase>('disconnected');
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [phase, setPhase]                     = useState<ConnectionPhase>('disconnected');
+  const [successMessage, setSuccessMessage]   = useState<string | null>(null);
+  const [errorMessage, setErrorMessage]       = useState<string | null>(null);
   const [connectedDeviceName, setConnectedDeviceName] = useState<string | null>(null);
-  const [bluetoothSupported] = useState(() =>
-    typeof navigator !== 'undefined' && 'bluetooth' in navigator
-  );
+  const [requiresNewTab, setRequiresNewTab]   = useState(false);
+
+  const inIframe            = isInIframe();
+  const appUrl              = getAppUrl();
+  const bluetoothAvailable  = typeof navigator !== 'undefined' && 'bluetooth' in navigator;
 
   const queryClient = useQueryClient();
   const isConnected = phase === 'connected';
 
+  /* ── استعلامات API ── */
   const { data: sensorResponse } = useQuery({
     queryKey: ['sensor-data'],
-    queryFn: () => getSensorData(),
+    queryFn:  () => getSensorData(),
     refetchInterval: isConnected ? 1000 : false,
-    enabled: isConnected,
+    enabled:  isConnected,
   });
 
   const { data: robotStatus } = useQuery({
     queryKey: ['robot-status'],
-    queryFn: () => getRobotStatus(),
+    queryFn:  () => getRobotStatus(),
     refetchInterval: isConnected ? 1000 : false,
-    enabled: isConnected,
+    enabled:  isConnected,
   });
 
   const commandMutation = useMutation({
@@ -48,71 +54,69 @@ export function useRobotControl() {
       sendRobotCommand({ data: { command } }),
   });
 
+  /* ── دالة الاتصال ── */
   const connect = useCallback(async () => {
     if (phase !== 'disconnected') return;
 
     setErrorMessage(null);
+    setRequiresNewTab(false);
     setPhase('scanning');
 
-    try {
-      let deviceName = 'روبوت نبتان';
-
-      if (bluetoothSupported) {
-        // فتح نافذة اختيار جهاز البلوتوث من المتصفح
-        const device = await (navigator as any).bluetooth.requestDevice({
-          acceptAllDevices: true,
-          optionalServices: ['battery_service', 'generic_access'],
-        });
-
-        deviceName = device.name || 'جهاز غير معروف';
-        setPhase('connecting');
-
-        // الاتصال بالخادم
-        await updateRobotStatus({
-          data: {
-            connected: true,
-            obstacleDetected: false,
-            movementProblem: false,
-            systemError: false,
-            cameraActive: false,
-          },
-        });
-
-        setConnectedDeviceName(deviceName);
-        setSuccessMessage(`Bluetooth Connected Successfully`);
-        setPhase('connected');
-        setTimeout(() => setSuccessMessage(null), 3000);
-
-      } else {
-        // المتصفح لا يدعم البلوتوث — وضع المحاكاة
-        setPhase('connecting');
-        await new Promise(r => setTimeout(r, 1800));
-
-        await updateRobotStatus({
-          data: {
-            connected: true,
-            obstacleDetected: false,
-            movementProblem: false,
-            systemError: false,
-            cameraActive: false,
-          },
-        });
-
-        setConnectedDeviceName('نبتان HC-06');
-        setSuccessMessage('Bluetooth Connected Successfully');
-        setPhase('connected');
-        setTimeout(() => setSuccessMessage(null), 3000);
-      }
-    } catch (err: any) {
-      // المستخدم أغلق نافذة الاختيار أو حدث خطأ
-      const cancelled =
-        err?.name === 'NotFoundError' || err?.message?.includes('cancelled');
-      setErrorMessage(cancelled ? 'تم إلغاء البحث' : 'فشل الاتصال — حاول مرة أخرى');
-      setTimeout(() => setErrorMessage(null), 3000);
+    // ── إذا كان البلوتوث غير مدعوم نهائياً ──
+    if (!bluetoothAvailable) {
       setPhase('disconnected');
+      setErrorMessage('متصفحك لا يدعم البلوتوث — استخدم Chrome');
+      setTimeout(() => setErrorMessage(null), 4000);
+      return;
     }
-  }, [phase, bluetoothSupported]);
 
+    try {
+      // ── فتح نافذة اختيار أجهزة البلوتوث ──
+      const device = await (navigator as any).bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: ['battery_service', 'generic_access'],
+      });
+
+      const deviceName = (device as any).name || 'جهاز غير معروف';
+      setPhase('connecting');
+
+      await updateRobotStatus({
+        data: {
+          connected:        true,
+          obstacleDetected: false,
+          movementProblem:  false,
+          systemError:      false,
+          cameraActive:     false,
+        },
+      });
+
+      setConnectedDeviceName(deviceName);
+      setSuccessMessage('Bluetooth Connected Successfully');
+      setPhase('connected');
+      setTimeout(() => setSuccessMessage(null), 3500);
+
+    } catch (err: any) {
+      setPhase('disconnected');
+
+      // ── خطأ الإطار المضمّن (iframe يمنع البلوتوث) ──
+      if (err?.name === 'SecurityError' || err?.message?.toLowerCase().includes('security')) {
+        setRequiresNewTab(true);
+        return;
+      }
+
+      // ── ألغى المستخدم الاختيار ──
+      if (err?.name === 'NotFoundError' || err?.name === 'NotAllowedError') {
+        setErrorMessage('تم إلغاء البحث');
+        setTimeout(() => setErrorMessage(null), 3000);
+        return;
+      }
+
+      setErrorMessage('فشل الاتصال — حاول مرة أخرى');
+      setTimeout(() => setErrorMessage(null), 3000);
+    }
+  }, [phase, bluetoothAvailable]);
+
+  /* ── دالة قطع الاتصال ── */
   const disconnect = useCallback(async () => {
     if (phase !== 'connected') return;
     setPhase('disconnecting');
@@ -120,16 +124,14 @@ export function useRobotControl() {
     try {
       await updateRobotStatus({
         data: {
-          connected: false,
+          connected:        false,
           obstacleDetected: false,
-          movementProblem: false,
-          systemError: false,
-          cameraActive: false,
+          movementProblem:  false,
+          systemError:      false,
+          cameraActive:     false,
         },
       });
-    } catch {
-      // تجاهل
-    }
+    } catch { /* تجاهل */ }
 
     queryClient.removeQueries({ queryKey: ['sensor-data'] });
     queryClient.removeQueries({ queryKey: ['robot-status'] });
@@ -137,6 +139,7 @@ export function useRobotControl() {
     setPhase('disconnected');
   }, [phase, queryClient]);
 
+  /* ── إرسال الأوامر ── */
   const sendCommand = useCallback(
     async (command: RobotCommand['command']) => {
       if (!isConnected) return { success: false, message: 'الروبوت غير متصل' };
@@ -151,6 +154,7 @@ export function useRobotControl() {
     [isConnected, commandMutation, queryClient]
   );
 
+  /* ── تحليل بيانات الحساسات ── */
   const sensorDataRaw = sensorResponse as any;
   const sensorData: RealSensorData =
     sensorDataRaw?.hasRealData && sensorDataRaw?.data
@@ -158,17 +162,20 @@ export function useRobotControl() {
       : null;
 
   const safeStatus: RobotStatus = robotStatus ?? {
-    connected: false,
+    connected:        false,
     obstacleDetected: false,
-    movementProblem: false,
-    systemError: false,
-    cameraActive: false,
+    movementProblem:  false,
+    systemError:      false,
+    cameraActive:     false,
   };
 
   return {
     phase,
     isConnected,
-    bluetoothSupported,
+    inIframe,
+    appUrl,
+    bluetoothAvailable,
+    requiresNewTab,
     successMessage,
     errorMessage,
     connectedDeviceName,

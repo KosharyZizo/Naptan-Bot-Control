@@ -12,10 +12,12 @@ export default function Dashboard() {
   const {
     phase,
     isConnected,
-    bluetoothSupported,
+    bluetoothAvailable,
+    requiresNewTab,
     successMessage,
     errorMessage,
     connectedDeviceName,
+    appUrl,
     sensorData,
     robotStatus,
     connect,
@@ -74,30 +76,15 @@ export default function Dashboard() {
         {/* شريط الاتصال */}
         <ConnectionStatus
           phase={phase}
-          bluetoothSupported={bluetoothSupported}
+          bluetoothAvailable={bluetoothAvailable}
+          requiresNewTab={requiresNewTab}
           successMessage={successMessage}
           errorMessage={errorMessage}
           connectedDeviceName={connectedDeviceName}
+          appUrl={appUrl}
           onConnect={connect}
           onDisconnect={disconnect}
         />
-
-        {/* رسائل الاتصال على الشاشات الصغيرة */}
-        <AnimatePresence>
-          {(successMessage || errorMessage) && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className={`md:hidden mb-4 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold border
-                ${successMessage
-                  ? "bg-primary/10 text-primary border-primary/30"
-                  : "bg-destructive/10 text-destructive border-destructive/30"}`}
-            >
-              {successMessage || errorMessage}
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* الشبكة الرئيسية */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
