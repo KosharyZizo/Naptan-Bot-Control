@@ -12,7 +12,10 @@ export default function Dashboard() {
   const {
     phase,
     isConnected,
-    connectionMessage,
+    bluetoothSupported,
+    successMessage,
+    errorMessage,
+    connectedDeviceName,
     sensorData,
     robotStatus,
     connect,
@@ -26,18 +29,18 @@ export default function Dashboard() {
     const res = await sendCommand(cmd);
 
     const cmdMap: Record<string, string> = {
-      F: "تحرك للأمام",
-      B: "تحرك للخلف",
-      R: "دوران لليمين",
-      L: "دوران لليسار",
-      S: "توقف طارئ",
+      F: "تحرّك للأمام",
+      B: "تحرّك للخلف",
+      R: "استدر يميناً",
+      L: "استدر يساراً",
+      S: "توقف",
       K: robotStatus.cameraActive ? "إيقاف الكاميرا" : "تشغيل الكاميرا",
     };
 
     if (res.success) {
       toast({
         title: "تم إرسال الأمر",
-        description: `(${cmd}): ${cmdMap[cmd]}`,
+        description: `${cmdMap[cmd]} (${cmd})`,
         variant: "default",
         className: "bg-primary text-primary-foreground border-primary",
         duration: 1200,
@@ -70,31 +73,33 @@ export default function Dashboard() {
 
         {/* شريط الاتصال */}
         <ConnectionStatus
-          isConnected={isConnected}
           phase={phase}
-          connectionMessage={connectionMessage}
+          bluetoothSupported={bluetoothSupported}
+          successMessage={successMessage}
+          errorMessage={errorMessage}
+          connectedDeviceName={connectedDeviceName}
           onConnect={connect}
           onDisconnect={disconnect}
         />
 
-        {/* رسالة الاتصال على الشاشة الصغيرة */}
+        {/* رسائل الاتصال على الشاشات الصغيرة */}
         <AnimatePresence>
-          {connectionMessage && (
+          {(successMessage || errorMessage) && (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              exit={{ opacity: 0, y: -8 }}
               className={`md:hidden mb-4 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold border
-                ${connectionMessage.includes("Successfully")
+                ${successMessage
                   ? "bg-primary/10 text-primary border-primary/30"
                   : "bg-destructive/10 text-destructive border-destructive/30"}`}
             >
-              {connectionMessage}
+              {successMessage || errorMessage}
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* شبكة المحتوى الرئيسية */}
+        {/* الشبكة الرئيسية */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
 
           {/* العمود الأيمن: الكاميرا + الحساسات */}
@@ -103,7 +108,7 @@ export default function Dashboard() {
             <SensorCards data={sensorData} isConnected={isConnected} />
           </div>
 
-          {/* العمود الأيسر: لوحة التحكم + التنبيهات */}
+          {/* العمود الأيسر: التحكم + التنبيهات */}
           <div className="xl:col-span-5 flex flex-col gap-6">
             <div className="h-[450px]">
               <ControlPad

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Thermometer, Droplets, Sprout, Hourglass } from "lucide-react";
+import { Thermometer, Droplets, Sprout, Loader2 } from "lucide-react";
 import type { SensorData } from "@workspace/api-client-react";
 
 interface SensorCardsProps {
@@ -27,35 +27,37 @@ export function SensorCards({ data, isConnected }: SensorCardsProps) {
   }
 
   const healthConfig = {
-    healthy: { label: "نبات صحي", color: "text-success", icon: "🟢" },
-    medium: { label: "حالة متوسطة", color: "text-warning", icon: "🟡" },
-    unhealthy: { label: "نبات غير صحي", color: "text-destructive", icon: "🔴" },
+    healthy:   { label: "نبات صحي",      color: "text-success",     icon: "🟢" },
+    medium:    { label: "حالة متوسطة",   color: "text-warning",     icon: "🟡" },
+    unhealthy: { label: "نبات غير صحي",  color: "text-destructive", icon: "🔴" },
   };
 
-  const currentHealth = hasData ? (healthConfig[data!.plantHealth] || healthConfig.medium) : null;
+  const currentHealth = hasData
+    ? healthConfig[data!.plantHealth] ?? healthConfig.medium
+    : null;
 
   const container = {
     hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { staggerChildren: 0.1 } },
+    show:   { opacity: 1, transition: { staggerChildren: 0.1 } },
   };
 
   const item = {
     hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 },
+    show:   { opacity: 1, y: 0 },
   };
 
-  const WaitingValue = () => (
+  const Placeholder = () => (
     <div className="flex items-center gap-2 text-muted-foreground">
-      {isConnected ? (
-        <>
-          <Hourglass className="w-5 h-5 animate-spin opacity-50" />
-          <span className="text-4xl font-mono font-bold opacity-40">--</span>
-        </>
-      ) : (
-        <span className="text-4xl font-mono font-bold opacity-20">--</span>
-      )}
+      {isConnected
+        ? <Loader2 className="w-5 h-5 animate-spin opacity-40" />
+        : null}
+      <span className="text-4xl font-mono font-bold opacity-25">--</span>
     </div>
   );
+
+  const waitingNote = isConnected
+    ? <p className="text-xs text-muted-foreground mt-2 opacity-40 z-10">في انتظار بيانات الحساس…</p>
+    : null;
 
   return (
     <motion.div
@@ -64,7 +66,7 @@ export function SensorCards({ data, isConnected }: SensorCardsProps) {
       animate="show"
       className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6"
     >
-      {/* Temperature */}
+      {/* درجة الحرارة */}
       <motion.div variants={item} className="glass-panel p-6 rounded-2xl flex flex-col justify-between relative overflow-hidden group">
         <div className="absolute -right-6 -top-6 w-24 h-24 bg-orange-500/10 rounded-full blur-2xl group-hover:bg-orange-500/20 transition-all" />
         <div className="flex items-center gap-3 mb-4 text-muted-foreground z-10">
@@ -81,16 +83,12 @@ export function SensorCards({ data, isConnected }: SensorCardsProps) {
               </span>
               <span className="text-xl text-muted-foreground mb-1">°C</span>
             </>
-          ) : (
-            <WaitingValue />
-          )}
+          ) : <Placeholder />}
         </div>
-        {!hasData && isConnected && (
-          <p className="text-xs text-muted-foreground mt-2 opacity-50 z-10">في انتظار قراءة الحساس...</p>
-        )}
+        {!hasData && waitingNote}
       </motion.div>
 
-      {/* Air Humidity */}
+      {/* رطوبة الهواء */}
       <motion.div variants={item} className="glass-panel p-6 rounded-2xl flex flex-col justify-between relative overflow-hidden group">
         <div className="absolute -right-6 -top-6 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all" />
         <div className="flex items-center gap-3 mb-4 text-muted-foreground z-10">
@@ -107,23 +105,19 @@ export function SensorCards({ data, isConnected }: SensorCardsProps) {
               </span>
               <span className="text-xl text-muted-foreground mb-1">%</span>
             </>
-          ) : (
-            <WaitingValue />
-          )}
+          ) : <Placeholder />}
         </div>
-        {!hasData && isConnected && (
-          <p className="text-xs text-muted-foreground mt-2 opacity-50 z-10">في انتظار قراءة الحساس...</p>
-        )}
+        {!hasData && waitingNote}
       </motion.div>
 
-      {/* Soil Moisture */}
+      {/* رطوبة التربة */}
       <motion.div variants={item} className="glass-panel p-6 rounded-2xl flex flex-col justify-between relative overflow-hidden group md:col-span-2 lg:col-span-1">
-        <div className={`absolute -right-6 -top-6 w-24 h-24 ${hasData ? soilBgClass : 'bg-white/5'} rounded-full blur-2xl transition-all`} />
+        <div className={`absolute -right-6 -top-6 w-24 h-24 ${hasData ? soilBgClass : "bg-white/5"} rounded-full blur-2xl transition-all`} />
 
         <div className="flex justify-between items-start mb-4 z-10">
           <div className="flex items-center gap-3 text-muted-foreground">
             <div className="p-2 bg-white/5 rounded-lg border border-white/10">
-              <Sprout className={`w-5 h-5 ${hasData ? soilColorClass : 'text-muted-foreground'}`} />
+              <Sprout className={`w-5 h-5 ${hasData ? soilColorClass : "text-muted-foreground"}`} />
             </div>
             <h3 className="font-semibold text-lg">رطوبة التربة</h3>
           </div>
@@ -161,10 +155,8 @@ export function SensorCards({ data, isConnected }: SensorCardsProps) {
             </>
           ) : (
             <>
-              <WaitingValue />
-              {isConnected && (
-                <p className="text-xs text-muted-foreground mt-2 opacity-50">في انتظار قراءة الحساس...</p>
-              )}
+              <Placeholder />
+              {waitingNote}
               <div className="w-full h-2 bg-black/50 rounded-full mt-3 border border-white/5" />
             </>
           )}
