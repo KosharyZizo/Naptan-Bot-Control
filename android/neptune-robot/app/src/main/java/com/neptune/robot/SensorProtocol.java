@@ -91,26 +91,53 @@ final class SensorProtocol {
 
     private static Double number(JSONObject object, String... keys) {
         for (String key : keys) {
-            if (!object.has(key) || object.isNull(key)) continue;
-            Object raw = object.opt(key);
-            if (raw instanceof Number) {
-                double value = ((Number) raw).doubleValue();
-                if (Double.isFinite(value)) return value;
-            } else if (raw instanceof String) {
-                Double value = parseNumber((String) raw);
+            if (object.has(key) && !object.isNull(key)) {
+                Double value = jsonNumber(object.opt(key));
+                if (value != null) return value;
+            }
+
+            String normalizedKey = normalize(key);
+            java.util.Iterator<String> names = object.keys();
+            while (names.hasNext()) {
+                String name = names.next();
+                if (!normalizedKey.equals(normalize(name)) || object.isNull(name)) continue;
+                Double value = jsonNumber(object.opt(name));
                 if (value != null) return value;
             }
         }
         return null;
     }
 
+    private static Double jsonNumber(Object raw) {
+        if (raw instanceof Number) {
+            double value = ((Number) raw).doubleValue();
+            return Double.isFinite(value) ? value : null;
+        }
+        return raw instanceof String ? parseNumber((String) raw) : null;
+    }
+
     private static String normalize(String key) {
-        return key.toLowerCase(Locale.ROOT).replace("_", "").replace("-", "").trim();
+        StringBuilder normalized = new StringBuilder();
+        for (int index = 0; index < key.length(); index++) {
+            char character = key.charAt(index);
+            if (Character.isLetterOrDigit(character)) {
+                normalized.append(Character.toLowerCase(character));
+            }
+        }
+        return normalized.toString().toLowerCase(Locale.ROOT);
     }
 
     private static Double parseNumber(String raw) {
         try {
-            double value = Double.parseDouble(raw.trim());
+            String token = raw.trim();
+            if (token.endsWith("%")) {
+                token = token.substring(0, token.length() - 1).trim();
+            } else if (token.endsWith("°C") || token.endsWith("°c")) {
+                token = token.substring(0, token.length() - 2).trim();
+            } else if (token.endsWith("C") || token.endsWith("c")) {
+                token = token.substring(0, token.length() - 1).trim();
+            }
+            double value = Double.parseDouble(token);
             return Double.isFinite(value) ? value : null;
         } catch (NumberFormatException ignored) {
             return null;

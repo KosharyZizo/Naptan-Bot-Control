@@ -150,7 +150,7 @@ public class MainActivity extends Activity implements BluetoothSerialManager.Lis
         camera.setOnClickListener(view -> sendCommand('K'));
 
         TextView protocolHint = text(
-            "يستقبل التطبيق سطراً واحداً لكل قراءة، بصيغة JSON أو CSV. التفاصيل في README.",
+            "يستقبل التطبيق سطراً واحداً لكل قراءة بصيغة JSON أو CSV أو مفاتيح وقيم. التفاصيل في README.",
             12, MUTED, false
         );
         page.addView(protocolHint, margins(2, 0, 2, 0));
