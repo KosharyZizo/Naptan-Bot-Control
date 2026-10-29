@@ -50,6 +50,23 @@ let robotStatus: StatusState = {
   lastSeen: new Date(),
 };
 
+const CONNECTION_TIMEOUT_MS = 20_000;
+
+function expireStaleConnection(): void {
+  if (!robotStatus.connected) return;
+  if (Date.now() - robotStatus.lastSeen.getTime() <= CONNECTION_TIMEOUT_MS) return;
+
+  sensorState.hasRealData = false;
+  robotStatus = {
+    connected: false,
+    obstacleDetected: false,
+    movementProblem: false,
+    systemError: false,
+    cameraActive: false,
+    lastSeen: new Date(),
+  };
+}
+
 function getSoilStatus(moisture: number): string {
   if (moisture <= 50) return "التربة تحتاج ماء";
   if (moisture <= 80) return "رطوبة متوسطة";
@@ -71,6 +88,7 @@ function getPlantHealth(
 }
 
 router.get("/sensor-data", (_req, res) => {
+  expireStaleConnection();
   if (!sensorState.hasRealData || !robotStatus.connected) {
     return res.json({ hasRealData: false });
   }
@@ -150,6 +168,7 @@ router.post("/command", (req, res) => {
 });
 
 router.get("/status", (_req, res) => {
+  expireStaleConnection();
   const data = GetRobotStatusResponse.parse(robotStatus);
   res.json(data);
 });

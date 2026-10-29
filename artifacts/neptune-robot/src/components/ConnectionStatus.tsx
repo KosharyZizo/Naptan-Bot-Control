@@ -13,6 +13,7 @@ interface ConnectionStatusProps {
   successMessage:      string | null;
   errorMessage:        string | null;
   connectedDeviceName: string | null;
+  remoteConnected?: boolean;
   appUrl:              string;
   onConnect:           () => void;
   onDisconnect:        () => void;
@@ -25,11 +26,13 @@ export function ConnectionStatus({
   successMessage,
   errorMessage,
   connectedDeviceName,
+  remoteConnected = false,
   appUrl,
   onConnect,
   onDisconnect,
 }: ConnectionStatusProps) {
-  const isConnected = phase === 'connected';
+  const isRemoteConnected = remoteConnected && phase !== 'connected';
+  const isConnected = phase === 'connected' || isRemoteConnected;
   const isBusy = phase === 'scanning' || phase === 'connecting' || phase === 'disconnecting';
 
   const statusText: Record<ConnectionPhase, string> = {
@@ -95,10 +98,10 @@ export function ConnectionStatus({
                 {isConnected && (
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
                 )}
-                <span className={`relative inline-flex rounded-full h-3 w-3 ${dotColor[phase]}`} />
+                <span className={`relative inline-flex rounded-full h-3 w-3 ${isRemoteConnected ? 'bg-primary' : dotColor[phase]}`} />
               </span>
-              <span className={`text-sm font-medium ${statusColor[phase]}`}>
-                {statusText[phase]}
+              <span className={`text-sm font-medium ${isRemoteConnected ? 'text-primary' : statusColor[phase]}`}>
+                {isRemoteConnected ? 'متصل من تطبيق Android' : statusText[phase]}
               </span>
             </div>
           </div>
@@ -121,19 +124,31 @@ export function ConnectionStatus({
             )}
           </AnimatePresence>
 
-          <Button
-            onClick={isConnected ? onDisconnect : onConnect}
-            disabled={isBusy}
-            variant={isConnected ? 'outline' : 'default'}
-            className={`w-full sm:w-auto gap-2 min-w-[170px] ${!isConnected && !isBusy ? 'glow-primary' : ''}`}
-          >
-            {isBusy
-              ? <Loader2 className="w-5 h-5 animate-spin" />
-              : isConnected
-              ? <BluetoothOff className="w-5 h-5" />
-              : <BluetoothSearching className="w-5 h-5" />}
-            {btnLabel()}
-          </Button>
+          {isRemoteConnected ? (
+            <div className="w-full sm:w-auto min-w-[190px] flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
+              <Bluetooth className="w-5 h-5" />
+              البيانات من تطبيق الهاتف
+            </div>
+          ) : phase === 'disconnected' ? (
+            <div className="w-full sm:w-auto min-w-[220px] flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-muted-foreground">
+              <Bluetooth className="w-5 h-5" />
+              اتصل بـ HC-05 من تطبيق Android
+            </div>
+          ) : (
+            <Button
+              onClick={isConnected ? onDisconnect : onConnect}
+              disabled={isBusy}
+              variant={isConnected ? 'outline' : 'default'}
+              className={`w-full sm:w-auto gap-2 min-w-[170px] ${!isConnected && !isBusy ? 'glow-primary' : ''}`}
+            >
+              {isBusy
+                ? <Loader2 className="w-5 h-5 animate-spin" />
+                : isConnected
+                ? <BluetoothOff className="w-5 h-5" />
+                : <BluetoothSearching className="w-5 h-5" />}
+              {btnLabel()}
+            </Button>
+          )}
         </div>
       </motion.div>
 

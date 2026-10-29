@@ -12,6 +12,7 @@ export default function Dashboard() {
   const {
     phase,
     isConnected,
+    localIsConnected,
     bluetoothAvailable,
     requiresNewTab,
     successMessage,
@@ -101,6 +102,7 @@ export default function Dashboard() {
           successMessage={successMessage}
           errorMessage={errorMessage}
           connectedDeviceName={connectedDeviceName}
+          remoteConnected={isConnected && !localIsConnected}
           appUrl={appUrl}
           onConnect={connect}
           onDisconnect={disconnect}
@@ -119,7 +121,8 @@ export default function Dashboard() {
           <div className="xl:col-span-5 flex flex-col gap-6">
             <div className="h-[450px]">
               <ControlPad
-                isConnected={isConnected}
+                isConnected={localIsConnected}
+                isRemoteConnected={isConnected && !localIsConnected}
                 cameraActive={robotStatus.cameraActive}
                 onCommand={handleCommand}
               />

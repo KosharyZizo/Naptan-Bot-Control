@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { 
   useGetSensorData, 
+  getGetSensorDataQueryKey,
   useSendRobotCommand, 
   useGetRobotStatus,
+  getGetRobotStatusQueryKey,
   type SensorData,
   type RobotStatus,
   type RobotCommand
@@ -43,6 +45,7 @@ export function useRobotControl() {
   // Real API hooks
   const { data: apiSensors, error: sensorError } = useGetSensorData({
     query: {
+      queryKey: getGetSensorDataQueryKey(),
       refetchInterval: localConnected ? 1000 : false,
       retry: 1,
     }
@@ -50,6 +53,7 @@ export function useRobotControl() {
 
   const { data: apiStatus, error: statusError } = useGetRobotStatus({
     query: {
+      queryKey: getGetRobotStatusQueryKey(),
       refetchInterval: localConnected ? 2000 : false,
       retry: 1,
     }

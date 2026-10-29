@@ -47,26 +47,26 @@ export function useRobotControl() {
   const bluetoothAvailable = typeof navigator !== 'undefined' && 'bluetooth' in navigator;
 
   const queryClient = useQueryClient();
-  const isConnected = phase === 'connected';
+  const localIsConnected = phase === 'connected';
 
   /* ── API Queries ── */
   const { data: sensorResponse } = useQuery({
     queryKey: ['sensor-data'],
     queryFn:  () => getSensorData(),
-    refetchInterval: isConnected ? 1000 : false,
-    enabled:  isConnected,
+    refetchInterval: localIsConnected ? 1000 : 2000,
   });
 
   const { data: robotStatus } = useQuery({
     queryKey: ['robot-status'],
     queryFn:  () => getRobotStatus(),
-    refetchInterval: isConnected ? 1000 : false,
-    enabled:  isConnected,
+    refetchInterval: localIsConnected ? 1000 : 2000,
   });
+
+  const isConnected = localIsConnected || Boolean(robotStatus?.connected);
 
   const commandMutation = useMutation({
     mutationFn: (command: RobotCommand['command']) =>
-      sendRobotCommand({ data: { command } }),
+      sendRobotCommand({ command }),
   });
 
   /* ── إيقاف الفحص ── */
@@ -105,13 +105,11 @@ export function useRobotControl() {
       }
 
       await updateRobotStatus({
-        data: {
-          connected:        true,
-          obstacleDetected: false,
-          movementProblem:  false,
-          systemError:      false,
-          cameraActive:     false,
-        },
+        connected:        true,
+        obstacleDetected: false,
+        movementProblem:  false,
+        systemError:      false,
+        cameraActive:     false,
       });
 
       setConnectedDeviceName(device.name);
@@ -162,7 +160,7 @@ export function useRobotControl() {
         scanRef.current = scan;
 
         const onAdv = (event: any) => {
-          const dev: BluetoothDevice = event.device;
+          const dev = event.device as any;
           const id = dev.id;
           if (!devicesRef.current.has(id)) {
             const entry: DiscoveredDevice = {
@@ -241,13 +239,11 @@ export function useRobotControl() {
 
     try {
       await updateRobotStatus({
-        data: {
-          connected:        false,
-          obstacleDetected: false,
-          movementProblem:  false,
-          systemError:      false,
-          cameraActive:     false,
-        },
+        connected:        false,
+        obstacleDetected: false,
+        movementProblem:  false,
+        systemError:      false,
+        cameraActive:     false,
       });
     } catch { /* تجاهل */ }
 
@@ -290,6 +286,7 @@ export function useRobotControl() {
   return {
     phase,
     isConnected,
+    localIsConnected,
     inIframe,
     appUrl,
     bluetoothAvailable,

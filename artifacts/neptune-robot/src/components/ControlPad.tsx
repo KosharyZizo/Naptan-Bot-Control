@@ -5,11 +5,12 @@ import type { RobotCommand } from "@workspace/api-client-react";
 
 interface ControlPadProps {
   isConnected: boolean;
+  isRemoteConnected?: boolean;
   cameraActive: boolean;
   onCommand: (cmd: RobotCommand["command"]) => void;
 }
 
-export function ControlPad({ isConnected, cameraActive, onCommand }: ControlPadProps) {
+export function ControlPad({ isConnected, isRemoteConnected = false, cameraActive, onCommand }: ControlPadProps) {
   const [activeBtn, setActiveBtn] = useState<string | null>(null);
 
   const handlePress = (cmd: RobotCommand["command"]) => {
@@ -53,9 +54,9 @@ export function ControlPad({ isConnected, cameraActive, onCommand }: ControlPadP
       {!isConnected && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-3xl">
           <p className="text-muted-foreground text-sm font-medium opacity-70 px-6 text-center leading-relaxed">
-            اتصل بالروبوت أولاً
-            <br />
-            لتفعيل أزرار التحكم
+            {isRemoteConnected
+              ? <>الروبوت متصل من تطبيق Android<br />استخدم أزرار التحكم في الهاتف</>
+              : <>اتصل بالروبوت أولاً<br />لتفعيل أزرار التحكم</>}
           </p>
         </div>
       )}

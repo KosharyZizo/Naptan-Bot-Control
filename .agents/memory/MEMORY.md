@@ -1,0 +1,1 @@
+- [HC-05 Android connection](hc05-android-connection.md) — retain HC-05/06 and use a native Android SPP app; browser Bluetooth cannot connect to it directly.
