@@ -54,6 +54,7 @@ public class MainActivity extends Activity implements BluetoothSerialManager.Lis
     private TextView temperatureValue;
     private TextView humidityValue;
     private TextView soilValue;
+    private TextView rainValue;
     private Button connectionButton;
     private EditText serverUrlInput;
     private AlertDialog deviceDialog;
@@ -63,6 +64,7 @@ public class MainActivity extends Activity implements BluetoothSerialManager.Lis
     private Double temperature;
     private Double humidity;
     private Double soilMoisture;
+    private Double rain;
     private boolean connected;
     private String apiBaseUrl = "";
     private final Runnable heartbeat = new Runnable() {
@@ -135,6 +137,7 @@ public class MainActivity extends Activity implements BluetoothSerialManager.Lis
         temperatureValue = addSensorCard(page, "درجة الحرارة", "°C");
         humidityValue = addSensorCard(page, "رطوبة الهواء", "%");
         soilValue = addSensorCard(page, "رطوبة التربة", "%");
+        rainValue = addSensorCard(page, "المطر", "");
 
         TextView controlsTitle = text("التحكم في الحركة", 19, TEXT, true);
         page.addView(controlsTitle, margins(0, 12, 0, 10));
@@ -559,6 +562,10 @@ public class MainActivity extends Activity implements BluetoothSerialManager.Lis
             soilMoisture = readings.soilMoisture;
             soilValue.setText(format(soilMoisture));
         }
+        if (readings.rain != null) {
+            rain = readings.rain;
+            rainValue.setText(String.format(Locale.US, "%.0f", rain));
+        }
         publishCurrentReadings();
     }
 
@@ -571,9 +578,11 @@ public class MainActivity extends Activity implements BluetoothSerialManager.Lis
         temperature = null;
         humidity = null;
         soilMoisture = null;
+        rain = null;
         if (temperatureValue != null) temperatureValue.setText("--");
         if (humidityValue != null) humidityValue.setText("--");
         if (soilValue != null) soilValue.setText("--");
+        if (rainValue != null) rainValue.setText("--");
         updateConnectionUi();
     }
 
