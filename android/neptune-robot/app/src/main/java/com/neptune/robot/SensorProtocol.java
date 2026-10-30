@@ -10,6 +10,7 @@ import java.util.Locale;
  *   {"temperature":25.4,"humidity":61.2,"soilMoisture":47}
  *   25.4,61.2,47
  *   temperature=25.4,humidity=61.2,soilMoisture=47
+ *   Temp:22.20 Hum:55.00 Soil:0% Rain:0
  */
 final class SensorProtocol {
     static final class Readings {
@@ -40,7 +41,7 @@ final class SensorProtocol {
                 JSONObject object = new JSONObject(line);
                 Readings readings = new Readings(
                     number(object, "temperature", "temp", "temperatureC"),
-                    number(object, "humidity", "airHumidity"),
+                    number(object, "humidity", "airHumidity", "hum"),
                     number(object, "soilMoisture", "soil_moisture", "soil", "moisture")
                 );
                 return readings.isEmpty() ? null : readings;
@@ -54,7 +55,7 @@ final class SensorProtocol {
         Double soilMoisture = null;
         boolean foundKey = false;
 
-        String[] parts = line.split("[,;]");
+        String[] parts = line.split("[,;\\s]+");
         for (String part : parts) {
             String[] pair = part.trim().split("[:=]", 2);
             if (pair.length != 2) continue;
@@ -66,7 +67,7 @@ final class SensorProtocol {
 
             if (key.equals("temperature") || key.equals("temp") || key.equals("temperaturec")) {
                 temperature = value;
-            } else if (key.equals("humidity") || key.equals("airhumidity")) {
+            } else if (key.equals("humidity") || key.equals("airhumidity") || key.equals("hum")) {
                 humidity = value;
             } else if (key.equals("soilmoisture") || key.equals("soil") || key.equals("moisture")) {
                 soilMoisture = value;
