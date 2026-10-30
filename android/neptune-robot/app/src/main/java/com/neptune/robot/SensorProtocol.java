@@ -7,7 +7,7 @@ import java.util.Locale;
 
 /**
  * Accepts one sensor reading per line:
- *   {"temperature":25.4,"humidity":61.2,"soilMoisture":47}
+ *   {"temperature":25.4,"humidity":61.2,"soilMoisture":47,"rain":0}
  *   25.4,61.2,47
  *   temperature=25.4,humidity=61.2,soilMoisture=47
  *   Temp:22.20 Hum:55.00 Soil:0% Rain:0
@@ -17,15 +17,17 @@ final class SensorProtocol {
         final Double temperature;
         final Double humidity;
         final Double soilMoisture;
+        final Double rain;
 
-        Readings(Double temperature, Double humidity, Double soilMoisture) {
+        Readings(Double temperature, Double humidity, Double soilMoisture, Double rain) {
             this.temperature = temperature;
             this.humidity = humidity;
             this.soilMoisture = soilMoisture;
+            this.rain = rain;
         }
 
         boolean isEmpty() {
-            return temperature == null && humidity == null && soilMoisture == null;
+            return temperature == null && humidity == null && soilMoisture == null && rain == null;
         }
     }
 
@@ -42,7 +44,8 @@ final class SensorProtocol {
                 Readings readings = new Readings(
                     number(object, "temperature", "temp", "temperatureC"),
                     number(object, "humidity", "airHumidity", "hum"),
-                    number(object, "soilMoisture", "soil_moisture", "soil", "moisture")
+                    number(object, "soilMoisture", "soil_moisture", "soil", "moisture"),
+                    number(object, "rain", "raining")
                 );
                 return readings.isEmpty() ? null : readings;
             }
@@ -53,6 +56,7 @@ final class SensorProtocol {
         Double temperature = null;
         Double humidity = null;
         Double soilMoisture = null;
+        Double rain = null;
         boolean foundKey = false;
 
         String[] parts = line.split("[,;\\s]+");
@@ -71,11 +75,13 @@ final class SensorProtocol {
                 humidity = value;
             } else if (key.equals("soilmoisture") || key.equals("soil") || key.equals("moisture")) {
                 soilMoisture = value;
+            } else if (key.equals("rain") || key.equals("raining")) {
+                rain = value;
             }
         }
 
         if (foundKey) {
-            Readings readings = new Readings(temperature, humidity, soilMoisture);
+            Readings readings = new Readings(temperature, humidity, soilMoisture, rain);
             return readings.isEmpty() ? null : readings;
         }
 
@@ -83,7 +89,8 @@ final class SensorProtocol {
             Double csvTemperature = parseNumber(parts[0]);
             Double csvHumidity = parseNumber(parts[1]);
             Double csvSoilMoisture = parseNumber(parts[2]);
-            Readings readings = new Readings(csvTemperature, csvHumidity, csvSoilMoisture);
+            Double csvRain = parts.length >= 4 ? parseNumber(parts[3]) : null;
+            Readings readings = new Readings(csvTemperature, csvHumidity, csvSoilMoisture, csvRain);
             return readings.isEmpty() ? null : readings;
         }
 
